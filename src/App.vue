@@ -209,13 +209,12 @@ export default {
             `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=c7ad2664a028a12457f00dc9fabf5d26fcb0043489b90e8a28602840f173243d`
           )
           const data = await f.json()
-          this.tickers.find(t => t.name === currentTicker.name).price =
+          this.tickers.find((t) => t.name === currentTicker.name).price =
             data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2)
           //currentTicker.price = data.USD //TODO Реактивно не обновляется
 
           if (this.sel.name === currentTicker.name) {
             this.graph.push(data.USD)
-            console.log(this.graph)
           }
         }, 3000)
         this.ticker = ''
@@ -235,12 +234,12 @@ export default {
     normalizeGraph() {
       const maxValue = Math.max(...this.graph)
       const minValue = Math.min(...this.graph)
-      return this.graph.map(
-        price => minValue === maxValue ? 100 : 5 + ((price - minValue) * 95) / (maxValue - minValue)
+      return this.graph.map((price) =>
+        minValue === maxValue
+          ? 100
+          : 5 + ((price - minValue) * 95) / (maxValue - minValue)
       )
     }
   }
 }
 </script>
-
-<style src="./app.css"></style>
