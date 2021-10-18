@@ -36,30 +36,7 @@
         <button
           @click="add"
           type="button"
-          class="
-            my-4
-            inline-flex
-            items-center
-            py-2
-            px-4
-            border border-transparent
-            shadow-sm
-            text-sm
-            leading-4
-            font-medium
-            rounded-full
-            text-white
-            bg-gray-600
-            hover:bg-gray-700
-            transition-colors
-            duration-300
-            focus:outline-none
-            focus:ring-2
-            focus:ring-offset-2
-            focus:ring-gray-500
-          "
-        >
-          <!-- Heroicon name: solid/mail -->
+          class="my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
           <svg
             class="-ml-0.5 mr-2 h-6 w-6"
             xmlns="http://www.w3.org/2000/svg"
@@ -78,9 +55,19 @@
 
       <template v-if="tickers.length">
         <hr class="w-full border-t border-gray-600 my-4" />
+        <div>
+          <button type="button" class="mx-2 my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            Назад
+          </button>
+          <button type="button" class="mx-2 my-4 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+            Вперед
+          </button>
+          <div>Фильтр: <input v-model="filter" type="text"></div>
+        </div>
+        <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="(t, idx) in tickers"
+            v-for="(t, idx) in filteredTickers()"
             :key="idx"
             @click="select(t)"
             :class="{
@@ -193,7 +180,9 @@ export default {
       ticker: '',
       tickers: [],
       sel: null,
-      graph: []
+      graph: [],
+      page: 1,
+      filter: ''
     }
   },
 
@@ -209,6 +198,12 @@ export default {
   },
 
   methods: {
+    filteredTickers() {
+      const start = (this.page - 1) * 6
+      const end = this.page * 6
+      return this.tickers.filter(ticker => ticker.name.includes(this.filter)).slice(start, end)
+    },
+
     subscribeToUpdates(tickerName) {
       setInterval(async () => {
         const f = await fetch(
@@ -219,7 +214,7 @@ export default {
           data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2)
         //currentTicker.price = data.USD //TODO Реактивно не обновляется
 
-        if (this.sel.name === tickerName) {
+        if (this.sel?.name === tickerName) {
           this.graph.push(data.USD)
         }
       }, 3000)
@@ -231,8 +226,10 @@ export default {
         name: this.ticker,
         price: '-'
       }
+
       if (this.ticker !== '') {
         this.tickers.push(currentTicker)
+        this.filter = ''
 
         localStorage.setItem('cryptonomicon-list', JSON.stringify(this.tickers))
 
@@ -253,7 +250,7 @@ export default {
     normalizeGraph() {
       const maxValue = Math.max(...this.graph)
       const minValue = Math.min(...this.graph)
-      return this.graph.map((price) =>
+      return this.graph.map(price =>
         minValue === maxValue
           ? 100
           : 5 + ((price - minValue) * 95) / (maxValue - minValue)
