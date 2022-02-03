@@ -1,5 +1,31 @@
 <template>
   <div class="container mx-auto flex flex-col items-center bg-gray-100 p-4">
+    <div
+      v-if="isLoading"
+      class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
+    >
+      <svg
+        class="animate-spin -ml-1 mr-3 h-12 w-12 text-white"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        ></path>
+      </svg>
+    </div>
+
     <div class="container">
       <section>
         <div class="flex">
@@ -10,7 +36,8 @@
             <div class="mt-1 relative rounded-md shadow-md">
               <input
                 v-model="ticker"
-                v-on:keydown.enter="add"
+                @keydown.enter="add"
+                @input="reset()"
                 type="text"
                 name="wallet"
                 id="wallet"
@@ -19,30 +46,21 @@
               />
             </div>
             <div
+              v-if="getSimilarTickers().length"
               class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
             >
               <span
+                v-for="(similar, index) in getSimilarTickers()"
+                @click="addHintTicker(similar)"
+                :key="index"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
               >
-                BTC
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                DOGE
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                BCH
-              </span>
-              <span
-                class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
-              >
-                CHD
+                {{ similar }}
               </span>
             </div>
-            <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
+            <div v-if="noValid" class="text-sm text-red-600">
+              Такой тикер уже добавлен
+            </div>
           </div>
         </div>
         <button
@@ -160,11 +178,57 @@ export default {
       ticker: '',
       tickers: [],
       sel: null,
-      graph: []
+      graph: [],
+      tickerList: null,
+      noValid: false,
+      isLoading: true
     };
   },
   methods: {
+    getSimilarTickers() {
+      if (this.ticker !== '') {
+        return Object.values(this.tickerList)
+          .map((t) => t.symbol)
+          .filter((item) => item.includes(this.ticker))
+          .splice(0, 4);
+      }
+      return [];
+    },
+
+    reset() {
+      this.ticker = this.ticker.toUpperCase();
+      this.noValid = false;
+      console.log('Get', this.getSimilarTickers());
+    },
+
+    getListTickers() {
+      this.isLoading = true;
+      fetch(
+        `https://min-api.cryptocompare.com/data/blockchain/list?api_key=b133fa43caff455371b4180ab1b602127e245121b3aa0b0b460b21c4d39e5499`
+      )
+        .then((response) => {
+          return response.json();
+        })
+        .then((data) => {
+          this.tickerList = data.Data;
+          this.isLoading = false;
+        });
+    },
+
+    checkMatch() {
+      return this.tickers.map((t) => t.name.toLowerCase());
+    },
+
+    addHintTicker(hint) {
+      this.ticker = hint;
+      this.add();
+    },
+
     add() {
+      if (this.checkMatch().includes(this.ticker.toLowerCase())) {
+        this.noValid = true;
+        return;
+      }
       const currentTicker = {
         name: this.ticker,
         price: '-'
@@ -185,6 +249,8 @@ export default {
         }
       }, 3000);
       this.ticker = '';
+
+      console.log('tickers', this.tickers);
     },
 
     handleDelete(tickerToRemove) {
@@ -205,6 +271,10 @@ export default {
         (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
     }
+  },
+
+  created() {
+    this.getListTickers();
   }
 };
 </script>
