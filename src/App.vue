@@ -47,7 +47,7 @@
             </div>
             <div
               v-if="getSimilarTickers().length"
-              class="flex bg-white shadow-md p-1 rounded-md shadow-md flex-wrap"
+              class="flex bg-white p-1 rounded-md shadow-md flex-wrap"
             >
               <span
                 v-for="(similar, index) in getSimilarTickers()"
@@ -86,9 +86,27 @@
 
       <template v-if="tickers.length">
         <hr class="w-full border-t border-gray-600 my-4" />
+        <div>
+          <button
+            v-if="page > 1"
+            @click="page = page - 1"
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Back
+          </button>
+          <button
+            v-if="hasNextPage"
+            @click="page = page + 1"
+            class="my-4 mx-2 inline-flex items-center py-2 px-4 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-full text-white bg-gray-600 hover:bg-gray-700 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          >
+            Next
+          </button>
+          <div>Filter: <input type="text" v-model="filter" /></div>
+        </div>
+        <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
           <div
-            v-for="t in tickers"
+            v-for="t in paginatedTickers"
             :key="t.name"
             @click="select(t)"
             :class="{ 'border-4': sel === t }"
@@ -132,7 +150,7 @@
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
-            v-for="(bar, index) in normalizedGraph()"
+            v-for="(bar, index) in normalizedGraph"
             :key="index"
             :style="{ height: `${bar}%` }"
             class="bg-purple-800 border w-10"
@@ -171,19 +189,75 @@
 </template>
 
 <script>
+// [ ] 6. Наличие в состоянии ЗАВИСИМЫХ ДАННЫХ | Критичность : 5+
+// [ ] 1. Одинаковый код в watch | Критичность: 3
+// [ ] 2. При удалении тикера остается подписка на загрузку тикера / Критичность: 5
+// [ ] 3. Количетсво запросов | Криичность : 4
+// [ ] 4. Запросы напрямую внутри компонента | Критичность : 5
+// [ ] 5. Обработка ошибок API | Критичночть : ?
+// [ ] 7. График ужасно выглядит если много цен | Критичность : 2
+// [ ] 8. При удалении тикера не изменяется localStorage | Критичность : 4
+// [ ] 9. localStorage и анонимные вкладки | Критичность : 3
+// [ ] 10. Магические строки и числа (URL, 10000 мс задержки, ключ localStorage, количество элементов на странице) | Критичность : 1
+
+// Параллельно
+// [x] График сломан, если везде одинаковые значения
+// [] При удалении тикера остается выбор
+
 export default {
   name: 'App',
   data() {
     return {
       ticker: '',
+      filter: '',
+
       tickers: [],
       sel: null,
+
       graph: [],
+
       tickerList: null,
       noValid: false,
-      isLoading: true
+      isLoading: true,
+
+      page: 1
     };
   },
+
+  computed: {
+    startIndex() {
+      return (this.page - 1) * 6;
+    },
+
+    endIndex() {
+      return this.page * 6;
+    },
+
+    filteredTickers() {
+      return this.tickers.filter((ticker) => ticker.name.includes(this.filter));
+    },
+
+    paginatedTickers() {
+      return this.filteredTickers.slice(this.startIndex, this.endIndex);
+    },
+
+    hasNextPage() {
+      return this.filteredTickers.length > this.endIndex;
+    },
+
+    normalizedGraph() {
+      const maxValue = Math.max(...this.graph);
+      const minValue = Math.min(...this.graph);
+
+      if (maxValue === minValue) {
+        return this.graph.map(() => 50);
+      }
+      return this.graph.map(
+        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
+      );
+    }
+  },
+
   methods: {
     getSimilarTickers() {
       if (this.ticker !== '') {
@@ -198,7 +272,6 @@ export default {
     reset() {
       this.ticker = this.ticker.toUpperCase();
       this.noValid = false;
-      console.log('Get', this.getSimilarTickers());
     },
 
     getListTickers() {
@@ -237,7 +310,7 @@ export default {
         if (this.sel?.name === tickerName) {
           this.graph.push(data.USD);
         }
-      }, 3000);
+      }, 10000);
       this.ticker = '';
     },
 
@@ -246,15 +319,18 @@ export default {
         this.noValid = true;
         return;
       }
-      const currentTicker = {
-        name: this.ticker,
-        price: '-'
-      };
+      if (this.ticker !== '') {
+        const currentTicker = {
+          name: this.ticker,
+          price: '-'
+        };
 
-      this.tickers.push(currentTicker);
-      this.subscribetoUpdates(currentTicker.name);
+        this.tickers.push(currentTicker);
+        this.filter = '';
+        this.subscribetoUpdates(currentTicker.name);
 
-      localStorage.setItem('crypto-list', JSON.stringify(this.tickers));
+        localStorage.setItem('crypto-list', JSON.stringify(this.tickers));
+      }
     },
 
     handleDelete(tickerToRemove) {
@@ -266,18 +342,42 @@ export default {
         this.sel = ticker;
         this.graph = [];
       }
+    }
+  },
+
+  watch: {
+    filter() {
+      this.page = 1;
+
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+      );
     },
 
-    normalizedGraph() {
-      const maxValue = Math.max(...this.graph);
-      const minValue = Math.min(...this.graph);
-      return this.graph.map(
-        (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
+    page() {
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
       );
     }
   },
 
   created() {
+    const windowData = Object.fromEntries(
+      new URL(window.location).searchParams.entries()
+    );
+
+    if (windowData.filter) {
+      this.filter = windowData.filter;
+    }
+
+    if (windowData.page) {
+      this.page = windowData.page;
+    }
+
     this.getListTickers();
     const tickersData = localStorage.getItem('crypto-list');
 
