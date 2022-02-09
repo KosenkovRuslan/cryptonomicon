@@ -17,12 +17,12 @@
           r="10"
           stroke="currentColor"
           stroke-width="4"
-        ></circle>
+        />
         <path
           class="opacity-75"
           fill="currentColor"
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-        ></path>
+        />
       </svg>
     </div>
 
@@ -46,17 +46,16 @@
               />
             </div>
             <div
-              v-if="getSimilarTickers().length"
+              v-if="getSimilarTickers.length"
               class="flex bg-white p-1 rounded-md shadow-md flex-wrap"
             >
               <span
-                v-for="(similar, index) in getSimilarTickers()"
+                v-for="(similar, index) in getSimilarTickers"
                 @click="addHintTicker(similar)"
                 :key="index"
                 class="inline-flex items-center px-2 m-1 rounded-md text-xs font-medium bg-gray-300 text-gray-800 cursor-pointer"
+                >{{ similar }}</span
               >
-                {{ similar }}
-              </span>
             </div>
             <div v-if="noValid" class="text-sm text-red-600">
               Такой тикер уже добавлен
@@ -78,7 +77,7 @@
           >
             <path
               d="M13 7h-2v4H7v2h4v4h2v-4h4v-2h-4V7zm-1-5C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
-            ></path>
+            />
           </svg>
           Добавить
         </button>
@@ -101,7 +100,10 @@
           >
             Next
           </button>
-          <div>Filter: <input type="text" v-model="filter" /></div>
+          <div>
+            Filter:
+            <input type="text" v-model="filter" />
+          </div>
         </div>
         <hr class="w-full border-t border-gray-600 my-4" />
         <dl class="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-3">
@@ -109,7 +111,7 @@
             v-for="t in paginatedTickers"
             :key="t.name"
             @click="select(t)"
-            :class="{ 'border-4': sel === t }"
+            :class="{ 'border-4': selectedTicker === t }"
             class="bg-white overflow-hidden shadow rounded-lg border-purple-800 border-solid cursor-pointer"
           >
             <div class="px-4 py-5 sm:p-6 text-center">
@@ -136,7 +138,7 @@
                   fill-rule="evenodd"
                   d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
                   clip-rule="evenodd"
-                ></path>
+                />
               </svg>
               Удалить
             </button>
@@ -144,9 +146,9 @@
         </dl>
         <hr class="w-full border-t border-gray-600 my-4" />
       </template>
-      <section v-if="sel" class="relative">
+      <section v-if="selectedTicker" class="relative">
         <h3 class="text-lg leading-6 font-medium text-gray-900 my-8">
-          {{ sel.name }} - USD
+          {{ selectedTicker.name }} - USD
         </h3>
         <div class="flex items-end border-gray-600 border-b border-l h-64">
           <div
@@ -157,7 +159,7 @@
           ></div>
         </div>
         <button
-          @click="sel = null"
+          @click="selectedTicker = null"
           type="button"
           class="absolute top-0 right-0"
         >
@@ -179,7 +181,7 @@
                 d="M436.896,74.869c-99.84-99.819-262.208-99.819-362.048,0c-99.797,99.819-99.797,262.229,0,362.048    c49.92,49.899,115.477,74.837,181.035,74.837s131.093-24.939,181.013-74.837C536.715,337.099,536.715,174.688,436.896,74.869z     M361.461,331.317c8.341,8.341,8.341,21.824,0,30.165c-4.16,4.16-9.621,6.251-15.083,6.251c-5.461,0-10.923-2.091-15.083-6.251    l-75.413-75.435l-75.392,75.413c-4.181,4.16-9.643,6.251-15.083,6.251c-5.461,0-10.923-2.091-15.083-6.251    c-8.341-8.341-8.341-21.845,0-30.165l75.392-75.413l-75.413-75.413c-8.341-8.341-8.341-21.845,0-30.165    c8.32-8.341,21.824-8.341,30.165,0l75.413,75.413l75.413-75.413c8.341-8.341,21.824-8.341,30.165,0    c8.341,8.32,8.341,21.824,0,30.165l-75.413,75.413L361.461,331.317z"
                 fill="#718096"
                 data-original="#000000"
-              ></path>
+              />
             </g>
           </svg>
         </button>
@@ -189,20 +191,20 @@
 </template>
 
 <script>
-// [ ] 6. Наличие в состоянии ЗАВИСИМЫХ ДАННЫХ | Критичность : 5+
-// [ ] 1. Одинаковый код в watch | Критичность: 3
+// [x] 6. Наличие в состоянии ЗАВИСИМЫХ ДАННЫХ | Критичность : 5+
 // [ ] 2. При удалении тикера остается подписка на загрузку тикера / Критичность: 5
-// [ ] 3. Количетсво запросов | Криичность : 4
 // [ ] 4. Запросы напрямую внутри компонента | Критичность : 5
-// [ ] 5. Обработка ошибок API | Критичночть : ?
-// [ ] 7. График ужасно выглядит если много цен | Критичность : 2
-// [ ] 8. При удалении тикера не изменяется localStorage | Критичность : 4
+// [ ] 5. Обработка ошибок API | Критичность : 5
+// [ ] 3. Количетсво запросов | Криичность : 4
+// [x] 8. При удалении тикера не изменяется localStorage | Критичность : 4
+// [x] 1. Одинаковый код в watch | Критичность: 3
 // [ ] 9. localStorage и анонимные вкладки | Критичность : 3
+// [x] 7. График ужасно выглядит если много цен | Критичность : 2
 // [ ] 10. Магические строки и числа (URL, 10000 мс задержки, ключ localStorage, количество элементов на странице) | Критичность : 1
 
 // Параллельно
 // [x] График сломан, если везде одинаковые значения
-// [] При удалении тикера остается выбор
+// [x] При удалении тикера остается выбор
 
 export default {
   name: 'App',
@@ -212,7 +214,7 @@ export default {
       filter: '',
 
       tickers: [],
-      sel: null,
+      selectedTicker: null,
 
       graph: [],
 
@@ -255,10 +257,12 @@ export default {
       return this.graph.map(
         (price) => 5 + ((price - minValue) * 95) / (maxValue - minValue)
       );
-    }
-  },
+    },
 
-  methods: {
+    checkMatch() {
+      return this.tickers.map((t) => t.name.toLowerCase());
+    },
+
     getSimilarTickers() {
       if (this.ticker !== '') {
         return Object.values(this.tickerList)
@@ -269,6 +273,15 @@ export default {
       return [];
     },
 
+    pageStateOptions() {
+      return {
+        filter: this.filter,
+        page: this.page
+      };
+    }
+  },
+
+  methods: {
     reset() {
       this.ticker = this.ticker.toUpperCase();
       this.noValid = false;
@@ -288,10 +301,6 @@ export default {
         });
     },
 
-    checkMatch() {
-      return this.tickers.map((t) => t.name.toLowerCase());
-    },
-
     addHintTicker(hint) {
       this.ticker = hint;
       this.add();
@@ -307,7 +316,7 @@ export default {
         this.tickers.find((t) => t.name === tickerName).price =
           data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
 
-        if (this.sel?.name === tickerName) {
+        if (this.selectedTicker?.name === tickerName) {
           this.graph.push(data.USD);
         }
       }, 10000);
@@ -315,7 +324,7 @@ export default {
     },
 
     add() {
-      if (this.checkMatch().includes(this.ticker.toLowerCase())) {
+      if (this.checkMatch.includes(this.ticker.toLowerCase())) {
         this.noValid = true;
         return;
       }
@@ -325,42 +334,52 @@ export default {
           price: '-'
         };
 
-        this.tickers.push(currentTicker);
+        this.tickers = [...this.tickers, currentTicker];
         this.filter = '';
         this.subscribetoUpdates(currentTicker.name);
-
-        localStorage.setItem('crypto-list', JSON.stringify(this.tickers));
       }
     },
 
     handleDelete(tickerToRemove) {
       this.tickers = this.tickers.filter((t) => t !== tickerToRemove);
+      if (this.selectedTicker === tickerToRemove) {
+        this.selectedTicker = null;
+      }
     },
 
     select(ticker) {
-      if (this.sel !== ticker) {
-        this.sel = ticker;
-        this.graph = [];
+      if (this.selectedTicker !== ticker) {
+        this.selectedTicker = ticker;
       }
     }
   },
 
   watch: {
-    filter() {
-      this.page = 1;
-
-      window.history.pushState(
-        null,
-        document.title,
-        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
-      );
+    selectedTicker() {
+      this.graph = [];
     },
 
-    page() {
+    tickers(newValue, oldValue) {
+      // Почему не сработал watch при добавлении тикера?
+      console.log(newValue === oldValue);
+      localStorage.setItem('crypto-list', JSON.stringify(this.tickers));
+    },
+
+    paginatedTickers() {
+      if (this.paginatedTickers.length === 0 && this.page > 1) {
+        this.page -= 1;
+      }
+    },
+
+    filter() {
+      this.page = 1;
+    },
+
+    pageStateOptions(value) {
       window.history.pushState(
         null,
         document.title,
-        `${window.location.pathname}?filter=${this.filter}&page=${this.page}`
+        `${window.location.pathname}?filter=${value.filter}&page=${value.page}`
       );
     }
   },
