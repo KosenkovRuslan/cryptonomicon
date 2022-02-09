@@ -226,6 +226,68 @@ export default {
     };
   },
 
+  created() {
+    const windowData = Object.fromEntries(
+      new URL(window.location).searchParams.entries()
+    );
+
+    const VALID_KEYS = ['filter', 'page'];
+
+    VALID_KEYS.forEach((key) => {
+      if (windowData[key]) {
+        this[key] = windowData[key];
+      }
+    });
+
+    // if (windowData.filter) {
+    //   this.filter = windowData.filter;
+    // }
+
+    // if (windowData.page) {
+    //   this.page = windowData.page;
+    // }
+
+    this.getListTickers();
+    const tickersData = localStorage.getItem('crypto-list');
+
+    if (tickersData) {
+      this.tickers = JSON.parse(tickersData);
+      this.tickers.forEach((ticker) => {
+        this.subscribetoUpdates(ticker.name);
+      });
+    }
+  },
+
+  watch: {
+    selectedTicker() {
+      this.graph = [];
+    },
+
+    tickers(newValue, oldValue) {
+      // Почему не сработал watch при добавлении тикера?
+      console.log(newValue === oldValue);
+      localStorage.setItem('crypto-list', JSON.stringify(this.tickers));
+    },
+
+    paginatedTickers() {
+      if (this.paginatedTickers.length === 0 && this.page > 1) {
+        this.page -= 1;
+      }
+    },
+
+    filter() {
+      this.page = 1;
+    },
+
+    pageStateOptions(value) {
+      window.history.pushState(
+        null,
+        document.title,
+        `${window.location.pathname}?filter=${value.filter}&page=${value.page}`
+      );
+    }
+  },
+
   computed: {
     startIndex() {
       return (this.page - 1) * 6;
@@ -351,60 +413,6 @@ export default {
       if (this.selectedTicker !== ticker) {
         this.selectedTicker = ticker;
       }
-    }
-  },
-
-  watch: {
-    selectedTicker() {
-      this.graph = [];
-    },
-
-    tickers(newValue, oldValue) {
-      // Почему не сработал watch при добавлении тикера?
-      console.log(newValue === oldValue);
-      localStorage.setItem('crypto-list', JSON.stringify(this.tickers));
-    },
-
-    paginatedTickers() {
-      if (this.paginatedTickers.length === 0 && this.page > 1) {
-        this.page -= 1;
-      }
-    },
-
-    filter() {
-      this.page = 1;
-    },
-
-    pageStateOptions(value) {
-      window.history.pushState(
-        null,
-        document.title,
-        `${window.location.pathname}?filter=${value.filter}&page=${value.page}`
-      );
-    }
-  },
-
-  created() {
-    const windowData = Object.fromEntries(
-      new URL(window.location).searchParams.entries()
-    );
-
-    if (windowData.filter) {
-      this.filter = windowData.filter;
-    }
-
-    if (windowData.page) {
-      this.page = windowData.page;
-    }
-
-    this.getListTickers();
-    const tickersData = localStorage.getItem('crypto-list');
-
-    if (tickersData) {
-      this.tickers = JSON.parse(tickersData);
-      this.tickers.forEach((ticker) => {
-        this.subscribetoUpdates(ticker.name);
-      });
     }
   }
 };
